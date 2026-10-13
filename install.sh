@@ -212,6 +212,7 @@ else
     # Compare the number
    if [ "${SERVER_GROUP_GID}" -lt 1000 ]; then
       echo "ERROR: Cannot add ${SERVICE_USER} to pre-existing system ${SERVICE_GROUP}"
+      exit 1
    else
       echo "Modifying user, adding to service group"
       usermod -a -G ${SERVICE_GROUP} ${SERVICE_USER}
