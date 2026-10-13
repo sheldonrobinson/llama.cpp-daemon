@@ -94,9 +94,9 @@ apply_default DRAFT_MODEL_PATH ""
 apply_default MODEL_ALIAS ""
 apply_default DRAFT_SPEC_TYPE ""
 apply_default HOST "0.0.0.0"
-apply_default PORT "8081"
+apply_default PORT "9931"
 apply_default CONTEXT_SIZE "65536"
-apply_default NGL_LEVEL "99"
+apply_default NGL_LEVEL "auto"
 apply_default JINJA_ENABLED "true"
 aaply_default AGENT_MODE_ENABLED "true"
 apply_default RESTART_MODE "always"
@@ -173,19 +173,11 @@ upsert_env RESTART_MODE    	"${RESTART_MODE}"
 upsert_env RESTART_SECONDS 	"${RESTART_SECONDS}"
 upsert_env JINJA_ENABLED   	"${JINJA_ENABLED}"
 upsert_env AGENT_MODE_ENABLED  	"${AGENT_MODE_ENABLED}"
+upsert_env SLEEP_IDLE_SECONDS	"${SLEEP_IDLE_SECONDS}"
 upsert_env LOG_PATH        	"${LOG_PATH}"        quote
 upsert_env SERVICE_USER    	"${SERVICE_USER}"
 upsert_env SERVICE_GROUP     	"${SERVICE_GROUP}"
 
-# Replace template values in service file
-sed -i "s|RESTART_MODE=.*|Restart=always|" "${SERVICE_FILE}"
-sed -i "s|RESTART_SECONDS=.*|RestartSec=5s|" "${SERVICE_FILE}"
-
-# Initialize the log file (llama-server logs here via --log-file)
-echo "Initializing log file at ${LOG_PATH}..."
-LOG_DIR="$(dirname "${LOG_PATH}")"
-mkdir -p "${LOG_DIR}"
-touch "${LOG_PATH}"
 # Owned by the user the daemon runs as so llama-server can write to it
 SERVICE_USER="${SERVICE_USER:-root}"
 SERVICE_GROUP="${SERVICE_GROUP:-${SERVICE_USER}}"
@@ -218,6 +210,18 @@ else
       usermod -a -G ${SERVICE_GROUP} ${SERVICE_USER}
    fi
 fi
+
+# Replace template values in service file
+sed -i "s|RESTART_MODE=.*|Restart=${RESTART_MODE}|" "${SERVICE_FILE}"
+sed -i "s|RESTART_SECONDS=.*|RestartSec=${RESTART_SECONDS}|" "${SERVICE_FILE}"
+sed -i "s|SERVICE_USER=.*|User=${SERVICE_USER}|" "${SERVICE_FILE}"
+sed -i "s|SERVICE_GROUP=.*|Group=${SERVICE_GROUP}|" "${SERVICE_FILE}"
+
+# Initialize the log file (llama-server logs here via --log-file)
+echo "Initializing log file at ${LOG_PATH}..."
+LOG_DIR="$(dirname "${LOG_PATH}")"
+mkdir -p "${LOG_DIR}"
+touch "${LOG_PATH}"
 
 if id "${SERVICE_USER}" >/dev/null 2>&1; then
     chown "${SERVICE_USER}:${SERVICE_GROUP}" "${LOG_PATH}"
