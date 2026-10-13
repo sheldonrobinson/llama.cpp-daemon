@@ -189,6 +189,35 @@ touch "${LOG_PATH}"
 # Owned by the user the daemon runs as so llama-server can write to it
 SERVICE_USER="${SERVICE_USER:-root}"
 SERVICE_GROUP="${SERVICE_GROUP:-${SERVICE_USER}}"
+
+if getent group "${SERVICE_GROUP}" >/dev/null; then
+  echo "Found existing group $groupname"
+else
+  echo "Creating group ${SERVICE_GROUP}"
+  addgroup --debug ${SERVICE_GROUP}
+fi
+
+if id "${SERVICE_USER}" >/dev/null 2>&1; then
+   echo "Found existing user ${SERVICE_USER}"
+else
+  echo "Creating system user ${SERVICE_USER}"
+  adduser --system --no-create-home --shell /bin/false ${SERVICE_USER}
+fi
+
+SERVER_GROUP_GID = $(getent group syslog | cut -d: -f3)
+
+if id -nG "${SERVICE_USER}" | grep -qw "${SERVICE_GROUP}"; then
+    echo "Found ${SERVICE_USER} belongs to ${SERVICE_GROUP}"
+else
+    # Compare the number
+   if [ "${SERVER_GROUP_GID}" -lt 1000 ]; then
+      echo "ERROR: Cannot add ${SERVICE_USER} to pre-existing system ${SERVICE_GROUP}"
+   else
+      echo "Modifying user, adding to service group"
+      usermod -a -G ${SERVICE_GROUP} ${SERVICE_USER}
+   fi
+fi
+
 if id "${SERVICE_USER}" >/dev/null 2>&1; then
     chown "${SERVICE_USER}:${SERVICE_GROUP}" "${LOG_PATH}"
 fi
