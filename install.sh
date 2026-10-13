@@ -8,14 +8,14 @@ TEMPLATE_FILE="${INSTALL_DIR}/.env.template"
 ENV_SOURCE="${INSTALL_DIR}/.env"
 
 echo "Installing llama.cpp server daemon..."
-echo "Usage: sudo ./install.sh [--model PATH] [--llamacpp_dir PATH]"
+echo "Usage: sudo ./install.sh [--model PATH] [--llamacpp_binary PATH]"
 echo "Options:"
 echo "  --model PATH       Path to .gguf model file (optional)"
-echo "  --llamacpp_dir PATH Path to llama.cpp directory (optional)"
+echo "  --llamacpp_binary PATH Path to llama.cpp binary (optional)"
 
 # Parse command line arguments (override .env when provided)
 CLI_MODEL_PATH=""
-CLI_LLAMCPP_DIR=""
+CLI_LLAMCPP_BINARY=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -28,11 +28,11 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --llamacpp_dir)
-            CLI_LLAMCPP_DIR="$2"
+            CLI_LLAMCPP_BINARY="$2"
             shift 2
             ;;
-        --llamacpp_dir=*)
-            CLI_LLAMCPP_DIR="${1#*=}"
+        --llamacpp_binary=*)
+            CLI_LLAMCPP_BINARY="${1#*=}"
             shift
             ;;
         *)
@@ -65,15 +65,15 @@ if [ -f "${ENV_SOURCE}" ]; then
     # shellcheck disable=SC1090
     source "${ENV_SOURCE}"
     MODEL_PATH="${CLI_MODEL_PATH:-${MODEL_PATH}}"
-    LLAMCPP_DIR="${CLI_LLAMCPP_DIR:-${LLAMCPP_DIR}}"
+    LLAMCPP_BINARY="${CLI_LLAMCPP_BINARY:-${LLAMCPP_BINARY}}"
 else
     # No .env: require everything via CLI, as before
     echo "No ${ENV_SOURCE} found; using command-line parameters..."
     MODEL_PATH="${CLI_MODEL_PATH}"
-    LLAMCPP_DIR="${CLI_LLAMCPP_DIR}"
-    if [ -z "${MODEL_PATH}" ] || [ -z "${LLAMCPP_DIR}" ]; then
-        echo "ERROR: no ${ENV_SOURCE} found and --model/--llamacpp_dir not provided"
-        echo "Create a .env (copy .env.template) or run: sudo ./install.sh --model PATH --llamacpp_dir PATH"
+    LLAMCPP_BINARY="${CLI_LLAMCPP_BINARY}"
+    if [ -z "${MODEL_PATH}" ] || [ -z "${LLAMCPP_BINARY}" ]; then
+        echo "ERROR: no ${ENV_SOURCE} found and --model/--llamacpp_binary not provided"
+        echo "Create a .env (copy .env.template) or run: sudo ./install.sh --model PATH --llamacpp_binary PATH"
         exit 1
     fi
 fi
@@ -89,18 +89,25 @@ apply_default() {
     fi
 }
 
+apply_default MMPROJ_MODEL_PATH ""
+apply_default DRAFT_MODEL_PATH ""
+apply_default MODEL_ALIAS ""
+apply_default DRAFT_SPEC_TYPE ""
 apply_default HOST "0.0.0.0"
 apply_default PORT "8081"
 apply_default CONTEXT_SIZE "65536"
 apply_default NGL_LEVEL "99"
 apply_default JINJA_ENABLED "true"
+aaply_default AGENT_MODE_ENABLED "true"
 apply_default RESTART_MODE "always"
 apply_default RESTART_SECONDS "5s"
 apply_default LOG_PATH "/var/log/llama-server.log"
+apply_default SERVICE_USER "llama"
+apply_default SERVICE_GROUP "llama"
 
 # Final sanity check
-if [ -z "${MODEL_PATH}" ] || [ -z "${LLAMCPP_DIR}" ]; then
-    echo "ERROR: MODEL_PATH and LLAMCPP_DIR are required"
+if [ -z "${MODEL_PATH}" ] || [ -z "${LLAMACPP_BINARY}" ]; then
+    echo "ERROR: MODEL_PATH and LLAMCPP_BINARY are required"
     exit 1
 fi
 
@@ -152,16 +159,23 @@ upsert_env() {
 # any key it is not explicitly told about (e.g. LLAMA_API_KEY,
 # LLAMA_ARG_N_PARALLEL) instead of regenerating the file from the template.
 echo "Updating ${ENV_FILE} (preserving settings not managed here)..."
-upsert_env MODEL_PATH      "${MODEL_PATH}"
-upsert_env LLAMCPP_DIR     "${LLAMCPP_DIR}"
-upsert_env HOST            "${HOST}"            quote
-upsert_env PORT            "${PORT}"            quote
-upsert_env CONTEXT_SIZE    "${CONTEXT_SIZE}"    quote
-upsert_env NGL_LEVEL       "${NGL_LEVEL}"       quote
-upsert_env RESTART_MODE    "${RESTART_MODE}"
-upsert_env RESTART_SECONDS "${RESTART_SECONDS}"
-upsert_env JINJA_ENABLED   "${JINJA_ENABLED}"
-upsert_env LOG_PATH        "${LOG_PATH}"        quote
+upsert_env MODEL_PATH      	"${MODEL_PATH}"
+upsert_env MMPROJ_MODEL_PATH    "${MMPROJ_MODEL_PATH}"
+upsert_env DRAFT_MODEL_PATH     "${DRAFT_MODEL_PATH}"
+upsert_env MODEL_ALIAS    	"${MODEL_ALIAS}"
+upsert_env LLAMACPP_BINARY 	"${LLAMACPP_BINARY}"
+upsert_env DRAFT_SPEC_TYPE 	"${DRAFT_SPEC_TYPE}" quote
+upsert_env HOST            	"${HOST}"            quote
+upsert_env PORT            	"${PORT}"            quote
+upsert_env CONTEXT_SIZE    	"${CONTEXT_SIZE}"    quote
+upsert_env NGL_LEVEL       	"${NGL_LEVEL}"       quote
+upsert_env RESTART_MODE    	"${RESTART_MODE}"
+upsert_env RESTART_SECONDS 	"${RESTART_SECONDS}"
+upsert_env JINJA_ENABLED   	"${JINJA_ENABLED}"
+upsert_env AGENT_MODE_ENABLED  	"${AGENT_MODE_ENABLED}"
+upsert_env LOG_PATH        	"${LOG_PATH}"        quote
+upsert_env SERVICE_USER    	"${SERVICE_USER}"
+upsert_env SERVICE_GROUP     	"${SERVICE_GROUP}"
 
 # Replace template values in service file
 sed -i "s|RESTART_MODE=.*|Restart=always|" "${SERVICE_FILE}"
@@ -192,11 +206,10 @@ else
 fi
 
 # Check if llama.cpp directory exists
-echo "Checking for llama.cpp directory..."
-if [ ! -d "${LLAMCPP_DIR}" ]; then
-    echo "ERROR: llama.cpp directory not found at ${LLAMCPP_DIR}"
+echo "Checking for llama.cpp binary..."
+if [ ! -f "${LLAMACPP_BINARY}" ]; then
+    echo "ERROR: llama.cpp binary not found at ${LLAMACPP_BINARY}"
     echo "Please download and build llama.cpp:"
-    echo "  cd ${LLAMCPP_DIR}"
     echo "  git clone https://github.com/ggerganov/llama.cpp.git ."
     echo "  git pull"
     echo "  make"
@@ -213,11 +226,9 @@ fi
 
 # Check if llama-server binary exists
 echo "Checking for llama-server binary..."
-if [ ! -f "${LLAMCPP_DIR}/build/bin/llama-server" ]; then
-    echo "ERROR: llama-server binary not found at ${LLAMCPP_DIR}/build/bin/llama-server"
+if [ ! -f "${LLAMACPP_BINARY}" ]; then
+    echo "ERROR: llama-server binary not found at ${LLAMCPP_BINARY}"
     echo "Please build llama.cpp first:"
-    echo "  cd ${LLAMCPP_DIR}"
-    echo "  make"
     exit 1
 fi
 

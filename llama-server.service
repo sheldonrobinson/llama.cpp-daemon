@@ -4,12 +4,16 @@ After=network.target
 
 [Service]
 Type=simple
+User=llama
+Group=llama
+WorkingDirectory=/srv/llama
 EnvironmentFile=/etc/systemd/system/llama-server.env
-ExecStart=/bin/bash -c 'source /etc/systemd/system/llama-server.env; exec ${LLAMCPP_DIR}/build/bin/llama-server -m "${MODEL_PATH}" --host "${HOST}" --port "${PORT}" -ngl "${NGL_LEVEL}" --ctx-size "${CONTEXT_SIZE}" --log-file "${LOG_PATH}" --log-timestamps $([ "${JINJA_ENABLED}" = "true" ] && echo "--jinja" || true)'
+ExecStart=bash -c 'source /etc/systemd/system/llama-server.env; /usr/local/bin/llama-server -m "${MODEL_PATH}" $([ -n "${MMPROJ_MODEL_PATH}" ] && echo "-mm ${MMPROJ_MODEL_PATH}"  || true) $([ -n "${DRAFT_MODEL_PATH}" ] && echo "-md ${DRAFT_MODEL_PATH}"  || true) $([ -n "${MODEL_ALIAS}" ] && echo "-a ${MODEL_ALIAS}"  || true)  $([ -n "$DRAFT_SPEC_TYPE" ] && echo "--spec-type $DRAFT_SPEC_TYPE"  || true) --host "${HOST}" --port "${PORT}" -ngl "${NGL_LEVEL}" --ctx-size "${CONTEXT_SIZE}" --log-file "${LOG_PATH}" --log-timestamps $([ "${JINJA_ENABLED}" = "true" ] && echo "--jinja" || true) $([ "${AGENT_ MODE_ENABLED}" = "true" ] && echo "--agent" || true)'
 Restart=always
 RestartSec=5s
 StandardOutput=journal
 StandardError=journal
+ReadWritePaths=/var/lib/llama /var/log/llama /srv/llama
 
 [Install]
 WantedBy=multi-user.target
