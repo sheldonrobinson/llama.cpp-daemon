@@ -161,6 +161,7 @@ upsert_env() {
 # any key it is not explicitly told about (e.g. LLAMA_API_KEY,
 # LLAMA_ARG_N_PARALLEL) instead of regenerating the file from the template.
 echo "Updating ${ENV_FILE} (preserving settings not managed here)..."
+upsert_env LLAMACPP_BINARY	"${LLAMACPP_BINARY}"
 upsert_env MODEL_PATH      	"${MODEL_PATH}"
 upsert_env MMPROJ_MODEL_PATH    "${MMPROJ_MODEL_PATH}"
 upsert_env DRAFT_MODEL_PATH     "${DRAFT_MODEL_PATH}"
@@ -219,6 +220,8 @@ sed -i "s|RESTART_MODE=.*|Restart=${RESTART_MODE}|" "${SERVICE_FILE}"
 sed -i "s|RESTART_SECONDS=.*|RestartSec=${RESTART_SECONDS}|" "${SERVICE_FILE}"
 sed -i "s|SERVICE_USER=.*|User=${SERVICE_USER}|" "${SERVICE_FILE}"
 sed -i "s|SERVICE_GROUP=.*|Group=${SERVICE_GROUP}|" "${SERVICE_FILE}"
+sed -i "s|SERVICE_ENV_FILE|${ENV_FILE}|" "${SERVICE_FILE}"
+sed -i "s|LLAMACPP_BINARY|${LLAMACPP_BINARY}|" "${SERVICE_FILE}"
 
 # Initialize the log file (llama-server logs here via --log-file)
 echo "Initializing log file at ${LOG_PATH}..."
