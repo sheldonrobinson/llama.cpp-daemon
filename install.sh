@@ -103,6 +103,7 @@ apply_default SLEEP_IDLE_SECONDS ""
 apply_default RESTART_MODE "always"
 apply_default RESTART_SECONDS "5s"
 apply_default LOG_PATH "/var/log/llama-server.log"
+apply_default LOG_LEVEL "info"
 apply_default SERVICE_USER "llama"
 apply_default SERVICE_GROUP "llama"
 
@@ -175,6 +176,7 @@ upsert_env RESTART_SECONDS 	"${RESTART_SECONDS}"
 upsert_env JINJA_ENABLED   	"${JINJA_ENABLED}"
 upsert_env AGENT_MODE_ENABLED  	"${AGENT_MODE_ENABLED}"
 upsert_env SLEEP_IDLE_SECONDS	"${SLEEP_IDLE_SECONDS}"
+upsert_env LOG_LEVEL        	"${LOG_LEVEL}"       quote
 upsert_env LOG_PATH        	"${LOG_PATH}"        quote
 upsert_env SERVICE_USER    	"${SERVICE_USER}"
 upsert_env SERVICE_GROUP     	"${SERVICE_GROUP}"
@@ -197,7 +199,7 @@ else
   adduser --system --no-create-home --shell /bin/false ${SERVICE_USER}
 fi
 
-SERVER_GROUP_GID = $(getent group syslog | cut -d: -f3)
+SERVER_GROUP_GID = $(getent group ${SERVICE_USER} | cut -d: -f3)
 
 if id -nG "${SERVICE_USER}" | grep -qw "${SERVICE_GROUP}"; then
     echo "Found ${SERVICE_USER} belongs to ${SERVICE_GROUP}"
