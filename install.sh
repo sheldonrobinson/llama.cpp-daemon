@@ -199,7 +199,7 @@ else
   adduser --system --no-create-home --shell /bin/false ${SERVICE_USER}
 fi
 
-SERVER_GROUP_GID = $(getent group ${SERVICE_USER} | cut -d: -f3)
+SERVER_GROUP_GID = $(getent group ${SERVICE_GROUP} | cut -d: -f3)
 
 if id -nG "${SERVICE_USER}" | grep -qw "${SERVICE_GROUP}"; then
     echo "Found ${SERVICE_USER} belongs to ${SERVICE_GROUP}"
