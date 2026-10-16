@@ -8,7 +8,7 @@ SERVICE_USER=llama
 SERVICE_GROUP=llama
 WorkingDirectory=/srv/llama
 EnvironmentFile=SERVICE_ENV_FILE
-ExecStart=bash -c 'source SERVICE_ENV_FILE; LLAMACPP_BINARY -m "${MODEL_PATH}" $([ -n "${MMPROJ_MODEL_PATH}" ] && echo "-mm ${MMPROJ_MODEL_PATH}"  || true) $([ -n "${DRAFT_MODEL_PATH}" ] && echo "-md ${DRAFT_MODEL_PATH}"  || true) $([ -n "${MODEL_ALIAS}" ] && echo "-a ${MODEL_ALIAS}"  || true)  $([ -n "$DRAFT_SPEC_TYPE" ] && echo "--spec-type $DRAFT_SPEC_TYPE"  || true) --host "${HOST}" --port "${PORT}" -ngl "${NGL_LEVEL}" --ctx-size "${CONTEXT_SIZE}" --log-file "${LOG_PATH}" --log-timestamps $([ "${JINJA_ENABLED}" = "true" ] && echo "--jinja" || true) $([ "${AGENT_ MODE_ENABLED}" = "true" ] && echo "--agent" || true) $([ -n "${SLEEP_IDLE_SECONDS}" ] && echo "--sleep-idle-seconds ${SLEEP_IDLE_SECONDS}"  || true)'
+ExecStart=bash -c 'source SERVICE_ENV_FILE; LLAMACPP_BINARY -m "${MODEL_PATH}" $([ -n "${MMPROJ_MODEL_PATH}" ] && echo "-mm ${MMPROJ_MODEL_PATH}"  || true) $([ -n "${DRAFT_MODEL_PATH}" ] && echo "-md ${DRAFT_MODEL_PATH}"  || true) $([ -n "${MODEL_ALIAS}" ] && echo "-a ${MODEL_ALIAS}"  || true)  $([ -n "$DRAFT_SPEC_TYPE" ] && echo "--spec-type $DRAFT_SPEC_TYPE"  || true) --host "${HOST}" --port "${PORT}" -ngl "${NGL_LEVEL}" --ctx-size "${CONTEXT_SIZE}" --log-file "${LOG_PATH}" --log-timestamps $([ "${JINJA_ENABLED}" = "true" ] && echo "--jinja" || true) $([ "${AGENT_MODE_ENABLED}" = "true" ] && echo "--agent" || true) $([ -n "${SLEEP_IDLE_SECONDS}" ] && echo "--sleep-idle-seconds ${SLEEP_IDLE_SECONDS}"  || true)'
 RESTART_MODE=always
 RESTART_SECONDS=5s
 StandardOutput=journal
