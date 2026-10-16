@@ -186,18 +186,18 @@ upsert_env SERVICE_GROUP     	"${SERVICE_GROUP}"
 SERVICE_USER="${SERVICE_USER:-root}"
 SERVICE_GROUP="${SERVICE_GROUP:-${SERVICE_USER}}"
 
-if getent group "${SERVICE_GROUP}" >/dev/null; then
-  echo "Found existing group $groupname"
-else
-  echo "Creating group ${SERVICE_GROUP}"
-  addgroup --debug ${SERVICE_GROUP}
-fi
-
 if id "${SERVICE_USER}" >/dev/null 2>&1; then
    echo "Found existing user ${SERVICE_USER}"
 else
   echo "Creating system user ${SERVICE_USER}"
   adduser --system --no-create-home --shell /bin/false ${SERVICE_USER}
+fi
+
+if getent group "${SERVICE_GROUP}" >/dev/null; then
+  echo "Found existing group $groupname"
+else
+  echo "Creating group ${SERVICE_GROUP}"
+  addgroup --debug ${SERVICE_GROUP}
 fi
 
 SERVER_GROUP_GID = $(getent group ${SERVICE_GROUP} | cut -d: -f3)
